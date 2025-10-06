@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smurf Attack Simulator - Educational Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 Smurf Attack Simulator</h1>
+            <p class="subtitle">Educational DDoS Attack Demonstration Tool</p>
+        </header>
+
+        <div class="warning-banner">
+            ⚠️ Educational Purpose Only - This is a simulation for learning cybersecurity concepts
+        </div>
+
+        <div class="main-grid">
+            <div class="control-panel">
+                <h2>Attack Configuration</h2>
+                <div class="form-group">
+                    <label for="targetIp">Target IP Address:</label>
+                    <input type="text" id="targetIp" value="10.0.0.100" placeholder="e.g., 10.0.0.100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="amplificationFactor">Amplification Factor:</label>
+                    <input type="range" id="amplificationFactor" min="10" max="200" value="100">
+                    <span id="ampValue">100</span>x
+                </div>
+                
+                <div class="form-group">
+                    <label for="amplificationNodes">Broadcast Network Size:</label>
+                    <input type="range" id="amplificationNodes" min="10" max="100" value="50">
+                    <span id="nodesValue">50</span> hosts
+                </div>
+
+                <div class="button-group">
+                    <button id="startBtn" class="btn btn-primary">Start Attack</button>
+                    <button id="stopBtn" class="btn btn-danger" disabled>Stop Attack</button>
+                    <button id="resetBtn" class="btn btn-secondary">Reset</button>
+                </div>
+
+                <div id="status" class="status-message"></div>
+            </div>
+
+            <div class="network-visualization">
+                <h2>Network Topology</h2>
+                <div id="networkCanvas">
+                    <div class="node attacker" id="attacker">
+                        <div class="node-icon">💻</div>
+                        <div class="node-label">Attacker</div>
+                    </div>
+                    
+                    <div class="node amplifier" id="amplifier">
+                        <div class="node-icon">📡</div>
+                        <div class="node-label">Broadcast Network</div>
+                        <div class="amplifier-nodes" id="amplifierNodes"></div>
+                    </div>
+                    
+                    <div class="node victim" id="victim">
+                        <div class="node-icon">🖥️</div>
+                        <div class="node-label">Victim</div>
+                        <div class="victim-ip" id="victimIp">10.0.0.100</div>
+                    </div>
+
+                    <svg id="packetSvg" class="packet-layer"></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Packets Sent</h3>
+                <div class="stat-value" id="packetsSent">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Bandwidth (MB)</h3>
+                <div class="stat-value" id="bandwidth">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Victim Load (%)</h3>
+                <div class="stat-value" id="victimLoad">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Amplification</h3>
+                <div class="stat-value" id="ampFactor">100x</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2>Real-Time Attack Metrics</h2>
+            <canvas id="attackChart"></canvas>
+        </div>
+
+        <div class="education-section">
+            <h2>📚 Understanding Smurf Attack</h2>
+            <div class="education-grid">
+                <div class="edu-card">
+                    <h3>What is a Smurf Attack?</h3>
+                    <p>A Smurf attack is a type of Distributed Denial of Service (DDoS) attack that exploits the Internet Control Message Protocol (ICMP). The attacker sends ICMP Echo Requests (ping) to a network's broadcast address with a spoofed source IP (the victim's IP).</p>
+                </div>
+                <div class="edu-card">
+                    <h3>How It Works</h3>
+                    <ol>
+                        <li><strong>Spoofing:</strong> Attacker sends ICMP Echo Request with victim's IP as source</li>
+                        <li><strong>Broadcasting:</strong> Packet sent to network broadcast address</li>
+                        <li><strong>Amplification:</strong> All hosts on network respond to victim</li>
+                        <li><strong>Flooding:</strong> Victim receives massive amount of ICMP Echo Replies</li>
+                    </ol>
+                </div>
+                <div class="edu-card">
+                    <h3>Prevention Methods</h3>
+                    <ul>
+                        <li>Disable IP-directed broadcasts at routers</li>
+                        <li>Configure hosts not to respond to ICMP requests to broadcast addresses</li>
+                        <li>Implement ingress filtering (RFC 2827)</li>
+                        <li>Use rate limiting for ICMP traffic</li>
+                    </ul>
+                </div>
+                <div class="edu-card">
+                    <h3>Attack Impact</h3>
+                    <p>Amplification factor can reach 100-200x, meaning one packet from the attacker generates hundreds of responses to the victim. This can overwhelm the victim's network bandwidth and processing capacity, causing service disruption.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="phaseLog" class="phase-log">
+            <h2>Attack Phase Log</h2>
+            <div id="logEntries"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
