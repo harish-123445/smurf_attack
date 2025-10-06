@@ -97,6 +97,40 @@
             <canvas id="attackChart"></canvas>
         </div>
 
+        <div class="victim-service-panel">
+            <h2>🎯 Victim Service Status</h2>
+            <p class="subtitle">Monitor the target service and see the actual impact of the DDoS attack</p>
+            
+            <div class="victim-status-grid">
+                <div class="victim-status-card">
+                    <div class="status-indicator" id="statusIndicator">
+                        <div class="status-dot"></div>
+                        <span id="serviceStatus">Checking...</span>
+                    </div>
+                    <div class="status-details">
+                        <p><strong>Active Requests:</strong> <span id="activeRequests">0</span></p>
+                        <p><strong>Message:</strong> <span id="statusMessage">Waiting for data...</span></p>
+                    </div>
+                </div>
+                
+                <div class="victim-actions">
+                    <a href="http://localhost:3000" target="_blank" class="btn btn-primary" id="visitService">
+                        🌐 Visit Victim Service
+                    </a>
+                    <button class="btn btn-secondary" id="checkHealth">
+                        🔍 Check Status
+                    </button>
+                    <button class="btn btn-secondary" id="resetService">
+                        🔄 Reset Service
+                    </button>
+                </div>
+            </div>
+            
+            <div class="service-info">
+                <p><strong>💡 Tip:</strong> Open the victim service in a new tab and try to access it during the attack. You'll notice it becoming slow or completely unavailable - that's the actual DDoS impact!</p>
+            </div>
+        </div>
+
         <div class="education-section">
             <h2>📚 Understanding Smurf Attack</h2>
             <div class="education-grid">

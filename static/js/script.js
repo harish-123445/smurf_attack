@@ -8,6 +8,7 @@ let chartData = {
     bandwidth: [],
     load: []
 };
+let healthCheckInterval = null;
 
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
@@ -201,15 +202,6 @@ socket.on('connection_response', (data) => {
     statusDiv.textContent = data.data;
 });
 
-socket.on('attack_started', (data) => {
-    attackRunning = true;
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
-    statusDiv.textContent = `✅ ${data.status}`;
-    statusDiv.style.background = 'rgba(0, 255, 136, 0.2)';
-    statusDiv.style.borderColor = '#00ff88';
-});
-
 socket.on('attack_phase', (data) => {
     addLogEntry(data.phase, data.description, data.timestamp);
     
@@ -243,6 +235,94 @@ socket.on('attack_complete', (data) => {
     stopBtn.disabled = true;
     statusDiv.textContent = `✅ Attack Complete - ${data.total_packets} packets sent, ${data.total_bandwidth} MB consumed`;
     statusDiv.style.background = 'rgba(0, 255, 255, 0.2)';
+    stopHealthMonitoring();
+});
+
+startBtn.addEventListener('click', () => {
+    const config = {
+        amplification_factor: parseInt(ampFactorSlider.value),
+        target_ip: targetIpInput.value,
+        amplification_nodes: parseInt(nodesSlider.value)
+    };
+    socket.emit('start_attack', config);
+});
+
+stopBtn.addEventListener('click', () => {
+    socket.emit('stop_attack');
+});
+
+resetBtn.addEventListener('click', () => {
+    socket.emit('reset_simulation');
+});
+
+async function checkVictimHealth() {
+    try {
+        const response = await fetch('/api/victim/health');
+        const data = await response.json();
+        updateVictimStatus(data);
+    } catch (error) {
+        updateVictimStatus({ status: 'offline', message: 'Service unavailable', active_requests: 0 });
+    }
+}
+
+function updateVictimStatus(data) {
+    const statusDot = document.querySelector('.status-dot');
+    const serviceStatus = document.getElementById('serviceStatus');
+    const activeRequests = document.getElementById('activeRequests');
+    const statusMessage = document.getElementById('statusMessage');
+    
+    statusDot.className = 'status-dot ' + data.status;
+    
+    const statusText = {
+        'healthy': '✅ Online',
+        'warning': '⚠️ Warning',
+        'degraded': '🔶 Degraded',
+        'critical': '🔴 Critical',
+        'timeout': '⏱️ Timeout',
+        'offline': '❌ Offline'
+    };
+    
+    serviceStatus.textContent = statusText[data.status] || '❓ Unknown';
+    activeRequests.textContent = data.active_requests || 0;
+    statusMessage.textContent = data.message || 'No information';
+}
+
+document.getElementById('checkHealth').addEventListener('click', checkVictimHealth);
+
+document.getElementById('resetService').addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/victim/reset');
+        const data = await response.json();
+        alert(data.message || 'Service reset successfully');
+        checkVictimHealth();
+    } catch (error) {
+        alert('Failed to reset victim service. Make sure it is running.');
+    }
+});
+
+function startHealthMonitoring() {
+    if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+    }
+    healthCheckInterval = setInterval(checkVictimHealth, 1000);
+    checkVictimHealth();
+}
+
+function stopHealthMonitoring() {
+    if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+        healthCheckInterval = null;
+    }
+}
+
+socket.on('attack_started', (data) => {
+    attackRunning = true;
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    statusDiv.textContent = `✅ ${data.status}`;
+    statusDiv.style.background = 'rgba(0, 255, 136, 0.2)';
+    statusDiv.style.borderColor = '#00ff88';
+    startHealthMonitoring();
 });
 
 socket.on('attack_stopped', (data) => {
@@ -252,6 +332,7 @@ socket.on('attack_stopped', (data) => {
     statusDiv.textContent = `⏸️ ${data.status}`;
     statusDiv.style.background = 'rgba(255, 165, 0, 0.2)';
     statusDiv.style.borderColor = '#ffaa00';
+    stopHealthMonitoring();
 });
 
 socket.on('simulation_reset', (data) => {
@@ -272,23 +353,8 @@ socket.on('simulation_reset', (data) => {
     chart.update();
     
     logEntries.innerHTML = '';
+    stopHealthMonitoring();
 });
 
-startBtn.addEventListener('click', () => {
-    const config = {
-        amplification_factor: parseInt(ampFactorSlider.value),
-        target_ip: targetIpInput.value,
-        amplification_nodes: parseInt(nodesSlider.value)
-    };
-    socket.emit('start_attack', config);
-});
-
-stopBtn.addEventListener('click', () => {
-    socket.emit('stop_attack');
-});
-
-resetBtn.addEventListener('click', () => {
-    socket.emit('reset_simulation');
-});
-
+checkVictimHealth();
 initChart();

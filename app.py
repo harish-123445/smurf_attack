@@ -5,6 +5,7 @@ import time
 import random
 import threading
 from datetime import datetime
+import requests
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'smurf-attack-simulation-secret'
@@ -23,6 +24,7 @@ class SmurfAttackSimulator:
         self.bandwidth_consumed = 0
         self.victim_load = 0
         self.amplification_nodes = 50
+        self.victim_url = 'http://localhost:3000'
         
     def configure(self, amplification_factor, target_ip, amplification_nodes):
         self.amplification_factor = amplification_factor
@@ -32,6 +34,12 @@ class SmurfAttackSimulator:
         self.packets_sent = 0
         self.bandwidth_consumed = 0
         self.victim_load = 0
+    
+    def attack_victim_service(self):
+        try:
+            requests.get(self.victim_url, timeout=0.5)
+        except:
+            pass
     
     def simulate_attack(self):
         self.is_running = True
@@ -65,6 +73,8 @@ class SmurfAttackSimulator:
                     self.packets_sent += 1
                     self.bandwidth_consumed += random.uniform(0.5, 1.5)
                     self.victim_load = min(100, (self.packet_count / 10))
+                    
+                    threading.Thread(target=self.attack_victim_service, daemon=True).start()
                     
                     packet_data = {
                         'source': f'192.168.1.{random.randint(1, 254)}',
@@ -103,6 +113,24 @@ simulator = SmurfAttackSimulator()
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/api/victim/health')
+def victim_health():
+    try:
+        response = requests.get('http://localhost:3000/health', timeout=2)
+        return jsonify(response.json())
+    except requests.exceptions.Timeout:
+        return jsonify({"status": "timeout", "message": "Service not responding"}), 504
+    except:
+        return jsonify({"status": "offline", "message": "Service unavailable"}), 503
+
+@app.route('/api/victim/reset')
+def victim_reset():
+    try:
+        response = requests.get('http://localhost:3000/reset', timeout=2)
+        return jsonify(response.json())
+    except:
+        return jsonify({"error": "Could not reset victim service"}), 503
 
 @socketio.on('connect')
 def handle_connect():

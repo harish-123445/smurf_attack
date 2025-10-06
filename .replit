@@ -17,6 +17,10 @@ author = "agent"
 task = "workflow.run"
 args = "Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Victim Service"
+
 [[workflows.workflow]]
 name = "Server"
 author = "agent"
@@ -29,10 +33,26 @@ waitForPort = 5000
 [workflows.workflow.metadata]
 outputType = "webview"
 
+[[workflows.workflow]]
+name = "Victim Service"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python victim_service.py"
+waitForPort = 3000
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
+
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 38483
-externalPort = 3000
+localPort = 39123
+externalPort = 3001
